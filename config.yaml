@@ -1,0 +1,5 @@
+# Конфиг
+
+DB_CONNECT_URL: sqlite:///C:/Users/CMD/PycharmProjects/trading_bot/bot.db
+TG_BOT_TOKEN: asdad
+

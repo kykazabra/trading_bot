@@ -1,36 +1,29 @@
-from sqlalchemy import create_engine
 from data_model import User, \
     UserTickers, \
     Ticker
-from sqlalchemy.orm import Session
+from utils import Session
+import datetime
 
-engine = create_engine("sqlite:///bot.db", echo=True)
 
-with Session(engine) as session:
-    User.create(
-        fields={
-            'nickname': 'Tcar'
-        },
-        commit=True,
-        session=session
+with Session() as session:
+    session.add(
+        User(
+            nickname='Tcar'
+        )
     )
 
-    Ticker.create(
-        fields={
-            'secid': 'SBER',
-            'date': '2024-11-12',
-            'close': 3.2
-        },
-        commit=True,
-        session=session
+    session.add(
+        Ticker(
+            secid='SBER',
+            date=datetime.datetime.strptime('2024-11-12', "%Y-%m-%d").date(),
+            close=3.2
+        )
     )
 
-    UserTickers.create(
-        fields={
-            'user_id': 'Tcar',
-            'ticker_secid': 'SBER',
-        },
-        commit=True,
-        session=session
+    session.add(
+        UserTickers(
+            user_id='Tcar',
+            ticker_secid='SBER',
+        )
     )
 
