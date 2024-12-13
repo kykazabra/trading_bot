@@ -11,9 +11,9 @@ def get_unique_tickers():
         return [a[0] for a in session.execute(select(Ticker.secid).distinct()).all()]
 
 
-def get_ticker_last_date():
+def get_ticker_last_date(secid):
     with Session() as session:
-        return session.execute(select(Ticker.date).order_by(Ticker.id)).one()[0]
+        return session.execute(select(Ticker.date).where(Ticker.secid == secid).order_by(Ticker.date)).one()[0]
 
 
 def get_all_ticker_data(name):
@@ -32,7 +32,7 @@ def increment_update_tickers():
         for ticker in unique_tickers:
             data = get_all_ticker_data(ticker)
 
-            last_date_in_db = get_ticker_last_date()
+            last_date_in_db = get_ticker_last_date(ticker)
 
             increment = data[data['TRADEDATE'].dt.date > last_date_in_db]
 
