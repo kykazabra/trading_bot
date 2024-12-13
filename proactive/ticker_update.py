@@ -1,9 +1,10 @@
 from data.utils import Session
 from data.data_model import Ticker
-from sqlalchemy import select, update
+from sqlalchemy import select, update, exists
 import requests
 import apimoex
 import pandas as pd
+from env import Config
 
 
 def get_unique_tickers():
@@ -40,9 +41,8 @@ def all_avalible_tickers():
     return df['SECID'].tolist()
 
 
-
 def dump_tickers(ticker_list):
-    from .strategy import calc_signal_auto
+    from .strategy import calc_signal_manual
 
     with Session() as session:
         for ticker in ticker_list:
@@ -54,45 +54,40 @@ def dump_tickers(ticker_list):
                         secid=ticker,
                         date=row['TRADEDATE'],
                         close=row['CLOSE'],
-                        volume=row['VOLUME']
+                        volume=row['VOLUME'],
+                        signal=calc_signal_manual(ticker_data[ticker_data['TRADEDATE'] <= row['TRADEDATE']]['CLOSE'].iloc[-Config.STRATEGY_WINDOW:])
                     )
 
                     session.add(dbrow)
 
                     print(f'В таблицу Ticker добавлена строка {dbrow}')
 
-    print('Расчитываю сигналы!')
-
-    with Session() as session:
-        for ticker in ticker_list:
-            ticker_data = get_all_ticker_data(ticker)
-
-            for _, row in ticker_data.iterrows():
-                if row['CLOSE'] > 0:
-                    session.execute(
-                        update(Ticker).where(Ticker.date == row['TRADEDATE'], Ticker.secid == ticker).values(
-                            signal=calc_signal_auto(ticker, date_end=row['TRADEDATE'])))
-
 
 def increment_update_tickers():
+    from .strategy import calc_signal_manual
+
     with Session() as session:
         unique_tickers = get_unique_tickers()
 
         for ticker in unique_tickers:
-            data = get_all_ticker_data(ticker)
+            ticker_data = get_all_ticker_data(ticker)
 
             last_date_in_db = get_ticker_last_date(ticker)
 
-            increment = data[data['TRADEDATE'].dt.date > last_date_in_db]
+            increment = ticker_data[ticker_data['TRADEDATE'].dt.date > last_date_in_db]
 
             for _, row in increment.iterrows():
-                dbrow = Ticker(
-                    secid=ticker,
-                    date=row['TRADEDATE'],
-                    close=row['CLOSE'],
-                    volume=row['VOLUME']
-                )
+                if row['CLOSE'] > 0:
+                    dbrow = Ticker(
+                        secid=ticker,
+                        date=row['TRADEDATE'],
+                        close=row['CLOSE'],
+                        volume=row['VOLUME'],
+                        signal=calc_signal_manual(ticker_data[ticker_data['TRADEDATE'] <= row['TRADEDATE']]['CLOSE'].iloc[-Config.STRATEGY_WINDOW:])
+                    )
 
-                session.add(dbrow)
+                    if not session.query(
+                            exists().where(Ticker.date == row['TRADEDATE'], Ticker.secid == ticker)).scalar():
+                        session.add(dbrow)
 
-                print(f'В таблицу Ticker добавлена строка {dbrow}')
+                        print(f'В таблицу Ticker добавлена строка {dbrow}')

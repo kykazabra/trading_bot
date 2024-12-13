@@ -76,16 +76,18 @@ def calc_signal_auto(ticker, date_end=None, date_start=None):
 
         close = pd.Series([tcr[0] for tcr in ticker_data])
 
-        if len(close) < 26:
-            return 0
+        return calc_signal_manual(close)
 
-        rsi = calculate_rsi(close)
-        macd = calculate_macd(close)
+def calc_signal_manual(close):
+    if len(close) < 26:
+        return 0
 
-        signal = calc_signal(rsi, macd)
+    rsi = calculate_rsi(close)
+    macd = calculate_macd(close)
 
-        return signal
+    signal = calc_signal(rsi, macd)
 
+    return signal
 
 def calc_signals():
     from .ticker_update import get_unique_tickers
