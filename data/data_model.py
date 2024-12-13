@@ -14,9 +14,10 @@ class Ticker(Base):
     date = sql.Column(sql.Date, nullable=False)
     close = sql.Column(sql.Float, nullable=False)
     volume = sql.Column(sql.Float)
+    signal = sql.Column(sql.Integer)
 
     def __repr__(self):
-        return f'Ticker(id={self.id}, secid={self.secid}, date={self.date}, close={self.close}, volume={self.volume})'
+        return f'Ticker(id={self.id}, secid={self.secid}, date={self.date}, close={self.close}, volume={self.volume}, signal={self.signal})'
 
 
 class UserTickers(Base):

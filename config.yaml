@@ -1,6 +1,6 @@
 # Конфиг
 
-DB_CONNECT_URL: sqlite:///C:/Users/CMD/PycharmProjects/trading_bot/bot.db
+DB_CONNECT_URL: sqlite:///C:/Users/216896/PycharmProjects/trading_bot/bot.db
 TG_BOT_TOKEN: asdad
 TIME_SLEEP: 8640
 

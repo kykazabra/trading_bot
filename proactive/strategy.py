@@ -1,6 +1,5 @@
 import pandas as pd
 from data.utils import Session
-from .ticker_update import get_unique_tickers
 from sqlalchemy import select
 from data.data_model import Ticker
 
@@ -59,12 +58,13 @@ def calc_signal(rsi, macd):
     return 0
 
 
-def calc_signals():
-    signals = {}
-
-    for ticker in get_unique_tickers():
+def calc_signal_auto(ticker, date=None):
+    try:
         with Session() as session:
-            ticker_data = session.execute(select(Ticker.close).where(Ticker.secid == ticker).order_by(Ticker.date)).all()
+            if date:
+                ticker_data = session.execute(select(Ticker.close).where(Ticker.secid == ticker, Ticker.date < date).order_by(Ticker.date)).all()
+            else:
+                ticker_data = session.execute(select(Ticker.close).where(Ticker.secid == ticker).order_by(Ticker.date)).all()
 
             close = pd.Series([tcr[0] for tcr in ticker_data])
 
@@ -73,6 +73,17 @@ def calc_signals():
 
             signal = calc_signal(rsi, macd)
 
-            signals[ticker] = signal
+            return signal
+    except:
+        return 0
+
+
+def calc_signals():
+    from .ticker_update import get_unique_tickers
+
+    signals = {}
+
+    for ticker in get_unique_tickers():
+        signals[ticker] = calc_signal_auto(ticker)
 
     return signals
