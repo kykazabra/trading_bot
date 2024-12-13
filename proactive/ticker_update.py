@@ -1,6 +1,6 @@
 from data.utils import Session
 from data.data_model import Ticker
-from sqlalchemy import select
+from sqlalchemy import select, update
 import requests
 import apimoex
 import pandas as pd
@@ -13,7 +13,7 @@ def get_unique_tickers():
 
 def get_ticker_last_date(secid):
     with Session() as session:
-        return session.execute(select(Ticker.date).where(Ticker.secid == secid).order_by(Ticker.date)).one()[0]
+        return session.execute(select(Ticker.date).where(Ticker.secid == secid).order_by(Ticker.date.desc())).first()[0]
 
 
 def get_all_ticker_data(name):
@@ -42,7 +42,6 @@ def all_avalible_tickers():
 
 
 def dump_tickers(ticker_list):
-    # TODO: Не работает калк страт
     from .strategy import calc_signal_auto
 
     with Session() as session:
@@ -55,13 +54,24 @@ def dump_tickers(ticker_list):
                         secid=ticker,
                         date=row['TRADEDATE'],
                         close=row['CLOSE'],
-                        volume=row['VOLUME'],
-                        signal=calc_signal_auto(ticker)
+                        volume=row['VOLUME']
                     )
 
                     session.add(dbrow)
 
                     print(f'В таблицу Ticker добавлена строка {dbrow}')
+
+    print('Расчитываю сигналы!')
+
+    with Session() as session:
+        for ticker in ticker_list:
+            ticker_data = get_all_ticker_data(ticker)
+
+            for _, row in ticker_data.iterrows():
+                if row['CLOSE'] > 0:
+                    session.execute(
+                        update(Ticker).where(Ticker.date == row['TRADEDATE'], Ticker.secid == ticker).values(
+                            signal=calc_signal_auto(ticker, date_end=row['TRADEDATE'])))
 
 
 def increment_update_tickers():

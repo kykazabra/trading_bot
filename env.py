@@ -23,3 +23,4 @@ class Config:
     DB_CONNECT_URL = get_env_config('DB_CONNECT_URL')
     TG_BOT_TOKEN = get_env_config('TG_BOT_TOKEN')
     TIME_SLEEP = int(get_env_config('TIME_SLEEP'))
+    STRATEGY_WINDOW = int(get_env_config('STRATEGY_WINDOW'))

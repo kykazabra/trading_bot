@@ -3,4 +3,5 @@
 DB_CONNECT_URL: sqlite:///C:/Users/216896/PycharmProjects/trading_bot/bot.db
 TG_BOT_TOKEN: asdad
 TIME_SLEEP: 8640
+STRATEGY_WINDOW: 60
 

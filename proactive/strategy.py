@@ -2,6 +2,7 @@ import pandas as pd
 from data.utils import Session
 from sqlalchemy import select
 from data.data_model import Ticker
+from env import Config
 
 
 def calculate_rsi(close, period=14):
@@ -58,24 +59,32 @@ def calc_signal(rsi, macd):
     return 0
 
 
-def calc_signal_auto(ticker, date=None):
-    try:
-        with Session() as session:
-            if date:
-                ticker_data = session.execute(select(Ticker.close).where(Ticker.secid == ticker, Ticker.date < date).order_by(Ticker.date)).all()
-            else:
-                ticker_data = session.execute(select(Ticker.close).where(Ticker.secid == ticker).order_by(Ticker.date)).all()
+def calc_signal_auto(ticker, date_end=None, date_start=None):
+    query = select(Ticker.close).filter(Ticker.secid == ticker)
 
-            close = pd.Series([tcr[0] for tcr in ticker_data])
+    with Session() as session:
+        if date_start:
+            query = query.filter(Ticker.date >= date_start)
 
-            rsi = calculate_rsi(close)
-            macd = calculate_macd(close)
+        if date_end:
+            query = query.filter(Ticker.date <= date_end)
 
-            signal = calc_signal(rsi, macd)
+        if Config.STRATEGY_WINDOW:
+            ticker_data = reversed(session.execute(query.order_by(Ticker.date.desc()).limit(Config.STRATEGY_WINDOW)).all())
+        else:
+            ticker_data = session.execute(query.order_by(Ticker.date)).all()
 
-            return signal
-    except:
-        return 0
+        close = pd.Series([tcr[0] for tcr in ticker_data])
+
+        if len(close) < 26:
+            return 0
+
+        rsi = calculate_rsi(close)
+        macd = calculate_macd(close)
+
+        signal = calc_signal(rsi, macd)
+
+        return signal
 
 
 def calc_signals():
