@@ -78,6 +78,7 @@ def calc_signal_auto(ticker, date_end=None, date_start=None):
 
         return calc_signal_manual(close)
 
+
 def calc_signal_manual(close):
     if len(close) < 26:
         return 0
@@ -89,12 +90,11 @@ def calc_signal_manual(close):
 
     return signal
 
-def calc_signals():
-    from .ticker_update import get_unique_tickers
 
+def get_last_signals(df):
     signals = {}
 
-    for ticker in get_unique_tickers():
-        signals[ticker] = calc_signal_auto(ticker)
+    for ticker in df['secid'].unique():
+        signals[ticker] = df[df['secid'] == ticker].sort_values('date').iloc[-1]['signal']
 
     return signals

@@ -20,6 +20,16 @@ class Ticker(Base):
         return f'Ticker(id={self.id}, secid={self.secid}, date={self.date}, close={self.close}, volume={self.volume}, signal={self.signal})'
 
 
+class AvailableTickers(Base):
+    __tablename__ = "available_ticker"
+
+    id = sql.Column(sql.Integer, primary_key=True, autoincrement=True)
+    secid = sql.Column(sql.String, nullable=False)
+
+    def __repr__(self):
+        return f'AvailableTickers(id={self.id}, secid={self.secid})'
+
+
 class UserTickers(Base):
     __tablename__ = "user_ticker"
 

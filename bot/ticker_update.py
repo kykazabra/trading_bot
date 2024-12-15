@@ -1,5 +1,5 @@
 from data.utils import Session
-from data.data_model import Ticker
+from data.data_model import Ticker, AvailableTickers
 from sqlalchemy import select, update, exists
 import requests
 import apimoex
@@ -26,7 +26,7 @@ def get_all_ticker_data(name):
         return df
 
 
-def all_avalible_tickers():
+def all_available_tickers():
     request_url = ('https://iss.moex.com/iss/engines/stock/'
                    'markets/shares/boards/TQBR/securities.json')
     arguments = {'securities.columns': ('SECID,'
@@ -41,8 +41,22 @@ def all_avalible_tickers():
     return df['SECID'].tolist()
 
 
+def update_available_tickers():
+    with Session() as session:
+        session.query(AvailableTickers).delete()
+
+    for ticker in all_available_tickers():
+        session.add(
+            AvailableTickers(
+                secid=ticker
+            )
+        )
+
+
 def dump_tickers(ticker_list):
     from .strategy import calc_signal_manual
+
+    rows = []
 
     with Session() as session:
         for ticker in ticker_list:
@@ -58,13 +72,22 @@ def dump_tickers(ticker_list):
                         signal=calc_signal_manual(ticker_data[ticker_data['TRADEDATE'] <= row['TRADEDATE']]['CLOSE'].iloc[-Config.STRATEGY_WINDOW:])
                     )
 
+                    d = dbrow.__dict__.copy()
+                    d.pop('_sa_instance_state')
+
+                    rows.append(d)
+
                     session.add(dbrow)
 
                     print(f'В таблицу Ticker добавлена строка {dbrow}')
 
+    return row
+
 
 def increment_update_tickers():
     from .strategy import calc_signal_manual
+
+    rows = []
 
     with Session() as session:
         unique_tickers = get_unique_tickers()
@@ -85,9 +108,13 @@ def increment_update_tickers():
                         volume=row['VOLUME'],
                         signal=calc_signal_manual(ticker_data[ticker_data['TRADEDATE'] <= row['TRADEDATE']]['CLOSE'].iloc[-Config.STRATEGY_WINDOW:])
                     )
+                    d = dbrow.__dict__.copy()
+                    d.pop('_sa_instance_state')
 
-                    if not session.query(
-                            exists().where(Ticker.date == row['TRADEDATE'], Ticker.secid == ticker)).scalar():
-                        session.add(dbrow)
+                    rows.append(d)
 
-                        print(f'В таблицу Ticker добавлена строка {dbrow}')
+                    session.add(dbrow)
+
+                    print(f'В таблицу Ticker добавлена строка {dbrow}')
+
+    return rows
