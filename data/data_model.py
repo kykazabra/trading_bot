@@ -45,7 +45,7 @@ class User(Base):
     __tablename__ = "user"
 
     id = sql.Column(sql.Integer, primary_key=True, autoincrement=True)
-    nickname = sql.Column(sql.String, unique=True, nullable=False)
+    diag_id = sql.Column(sql.String, unique=True, nullable=False)
 
     def __repr__(self):
-        return f'User(id={self.id}, nickname={self.nickname}'
+        return f'User(id={self.id}, diag_id={self.diag_id}'

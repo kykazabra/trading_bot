@@ -1,7 +1,8 @@
 # Конфиг
 
 DB_CONNECT_URL: sqlite:///C:/Users/CMD/PycharmProjects/trading_bot/bot.db
-TG_BOT_TOKEN: asdad
+TG_BOT_TOKEN: 8067779015:AAGp7ykoh8krBAr0RCWOUmo4jW_sPqJNr4U
 TIME_SLEEP: 8640
 STRATEGY_WINDOW: 60
-
+ROWS_PER_PAGE: 5
+BUTTONS_PER_ROW: 3

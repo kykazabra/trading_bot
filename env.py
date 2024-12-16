@@ -24,3 +24,6 @@ class Config:
     TG_BOT_TOKEN = get_env_config('TG_BOT_TOKEN')
     TIME_SLEEP = int(get_env_config('TIME_SLEEP'))
     STRATEGY_WINDOW = int(get_env_config('STRATEGY_WINDOW'))
+    ROWS_PER_PAGE = int(get_env_config('ROWS_PER_PAGE'))
+    BUTTONS_PER_ROW = int(get_env_config('BUTTONS_PER_ROW'))
+    BUTTONS_PER_PAGE = int(get_env_config('BUTTONS_PER_ROW') * get_env_config('ROWS_PER_PAGE'))
