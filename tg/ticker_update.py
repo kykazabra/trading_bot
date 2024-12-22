@@ -40,7 +40,7 @@ def get_len_n_not_user_tickets(si, n, diag_id):
 def get_ticker_users(ticker_secid):
     with Session() as session:
         return [get_user_diagid(id[0]) for id in session.execute(
-            select(UserTickers.id).distinct().where(UserTickers.ticker_secid == ticker_secid)).all()]
+            select(UserTickers.user_id).distinct().where(UserTickers.ticker_secid == ticker_secid)).all()]
 
 
 '''
@@ -80,6 +80,11 @@ def get_user_tickers(diag_id):
 
     with Session() as session:
         return [a[0] for a in session.execute(select(UserTickers.ticker_secid).where(UserTickers.user_id == user_id)).all()]
+
+
+def get_ticker_info(secid):
+    with Session() as session:
+        return [i for i in session.execute(select(Ticker.close, Ticker.date, Ticker.signal, Ticker.secid).where(Ticker.secid == secid))]
 
 
 def add_ticker_to_user(ticker_secid, diag_id):
@@ -146,7 +151,7 @@ def dump_tickers(ticker_list):
 
     with Session() as session:
         for ticker in ticker_list:
-            ticker_data = get_all_ticker_data(ticker)
+            ticker_data = get_all_ticker_data(ticker)[0:-30]  # DEMO
 
             for _, row in ticker_data.iterrows():
                 if row['CLOSE'] > 0:
@@ -184,7 +189,6 @@ def increment_update_tickers():
             last_date_in_db = get_ticker_last_date(ticker)
 
             increment = ticker_data[ticker_data['TRADEDATE'].dt.date > last_date_in_db]
-
             for _, row in increment.iterrows():
                 if row['CLOSE'] > 0:
                     dbrow = Ticker(
@@ -204,5 +208,4 @@ def increment_update_tickers():
                     session.add(dbrow)
 
                     print(f'В таблицу Ticker добавлена строка {dbrow}')
-
     return rows

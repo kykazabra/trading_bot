@@ -5,8 +5,12 @@ from tg.ticker_update import check_nd_add_user, \
     get_len_n_user_tickets, \
     add_ticker_to_user, \
     remove_ticker_from_user, \
-    get_user_tickers
+    get_user_tickers, \
+    get_ticker_info
 import math
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 
 def create_page(buttons, page_idx, type_command='add'):
@@ -48,6 +52,43 @@ def create_keyboard(data):
 
 
 def raise_reactive_bot(bot):
+    def draw_graph(data):
+        sns.set_palette('flare')
+
+        closes, dates, signal, secid = zip(*data[-30:])
+        df = pd.DataFrame({'date': dates, 'close': closes, 'signal': signal})
+        plt.plot(df['date'], df['close'], label='Close Price', color='blue')
+        plt.xlabel('Дата')
+        plt.ylabel('Цена, руб.')
+        plt.title(f'График котировок {secid[0]}')
+
+        for index, row in df.iterrows():
+            if row['signal'] == 1:
+                plt.annotate('↑', xy=(row['date'], row['close']),
+                             xytext=(row['date'], row['close']),
+                             color='green', fontsize=20,
+                             ha='center', va='bottom')
+            elif row['signal'] == -1:
+                plt.annotate('↓', xy=(row['date'], row['close']),
+                             xytext=(row['date'], row['close']),
+                             color='red', fontsize=20,
+                             ha='center', va='top')
+
+        # plt.figure(figsize=(10, 6))
+        # sns.lineplot(x='Дата', y='Цена', data=pd.DataFrame({'Цена': closes, 'Дата': dates}), color='b', label='Цена акций')
+        # sns.set_palette('flare')
+        # plt.xlabel('Дата')
+        # plt.ylabel('Цена, руб.')
+        # plt.title('График котировок акций')
+        # plt.xticks(rotation=45)
+        # plt.legend()
+        # plt.grid()
+
+        image_path = 'stock_graph.png'
+        plt.savefig(image_path)
+        plt.close()
+        return image_path
+
     @bot.message_handler(commands=['start'])
     def start_command(message):
         text = 'Привет!\nЯ бот - трейдер.\n\nВыбирай акции с помощью команды /add_ticker, а я буду следить за ними и ' \
@@ -88,25 +129,33 @@ def raise_reactive_bot(bot):
                     #call.message.delete()
                     bot.delete_message(call.message.chat.id, call.message.message_id)
 
+                elif data_splitted[1] == 'graph':
+                    # TODO: check errors
+                    idx = int(data_splitted[2])
+                    type_command = data_splitted[1]
+                    data = get_ticker_info(secid=data_splitted[-1])
+                    image_path = draw_graph(data)
+                    with open(image_path, 'rb') as photo:
+                        bot.send_photo(call.message.chat.id, photo)
                 else:
                     bot.answer_callback_query(call.id, f'IDK')
 
-            # if type_command == 'add':
-            #     full_len, tickers_data = get_len_n_not_user_tickets(idx * Config.BUTTONS_PER_PAGE,
-            #                                                         Config.BUTTONS_PER_PAGE, call.message.chat.id)
-            # elif type_command == 'del':
-            #     full_len, tickers_data = get_len_n_user_tickets(idx * Config.BUTTONS_PER_PAGE, Config.BUTTONS_PER_PAGE,
-            #                                                     call.message.chat.id)
-            #
-            # # full_len, tickers_data = 8, [f'SBER{idx}', f'BEBR{idx}']#, f'SER{idx}', f'LOH{idx}']
-            # keyboard_data = '_'.join([str(idx), str(full_len), type_command] + tickers_data)
-            #
-            # try:
-            #     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id,
-            #                                   reply_markup=create_keyboard(keyboard_data))
-            # except:
-            #     # Вылетает если ничего не поменялось
-            #     pass
+            if type_command == 'add':
+                full_len, tickers_data = get_len_n_not_user_tickets(idx * Config.BUTTONS_PER_PAGE,
+                                                                    Config.BUTTONS_PER_PAGE, call.message.chat.id)
+            elif type_command in ['del', 'graph']:
+                full_len, tickers_data = get_len_n_user_tickets(idx * Config.BUTTONS_PER_PAGE, Config.BUTTONS_PER_PAGE,
+                                                                call.message.chat.id)
+
+            # full_len, tickers_data = 8, [f'SBER{idx}', f'BEBR{idx}']#, f'SER{idx}', f'LOH{idx}']
+            keyboard_data = '_'.join([str(idx), str(full_len), type_command] + tickers_data)
+
+            try:
+                bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id,
+                                              reply_markup=create_keyboard(keyboard_data))
+            except:
+                # Вылетает если ничего не поменялось
+                pass
         else:
             bot.answer_callback_query(call.id, f'NOT BINDED: {call.data}')
 
@@ -114,6 +163,7 @@ def raise_reactive_bot(bot):
     def add_ticker_command(message):
         text = 'Какую акцию из предложенных ты хочешь добавить?'
         # full_len, tickers_data = 8, [f'SBER0', f'BEBR0']#, f'SER{idx}', f'LOH{idx}']
+        check_nd_add_user(message.chat.id)
         full_len, tickers_data = get_len_n_not_user_tickets(0, Config.BUTTONS_PER_PAGE, message.chat.id)
 
         keyboard_data = '_'.join(['0', str(full_len), 'add'] + tickers_data)
@@ -122,13 +172,24 @@ def raise_reactive_bot(bot):
 
     @bot.message_handler(commands=['drop_ticker'])
     def add_ticker_command(message):
+        check_nd_add_user(message.chat.id)
         text = 'Какую акцию из предложенных ты хочешь удалить?'
         # full_len, tickers_data = 8, [f'SBER0', f'BEBR0']#, f'SER{idx}', f'LOH{idx}']
         full_len, tickers_data = get_len_n_user_tickets(0, Config.BUTTONS_PER_PAGE, message.chat.id)
         keyboard_data = '_'.join(['0', str(full_len), 'del'] + tickers_data)
         bot.send_message(message.chat.id, text, reply_markup=create_keyboard(keyboard_data))
 
+    @bot.message_handler(commands=['graphics'])
+    def send_graphics(message):
+        text = 'Для какой акции ты хочешь нарисовать график?'
+        check_nd_add_user(message.chat.id)
+        # full_len, tickers_data = 8, [f'SBER0', f'BEBR0']#, f'SER{idx}', f'LOH{idx}']
+        full_len, tickers_data = get_len_n_user_tickets(0, Config.BUTTONS_PER_PAGE, message.chat.id)
+        keyboard_data = '_'.join(['0', str(full_len), 'graph'] + tickers_data)
+        bot.send_message(message.chat.id, text, reply_markup=create_keyboard(keyboard_data))
+
     @bot.message_handler(commands=['my_portfolio'])
     def my_portfolio_command(message: types.Message):
+        check_nd_add_user(message.chat.id)
         tickers = "\n".join(get_user_tickers(message.from_user.id))
         bot.send_message(message.chat.id, f'Ваш портфель:\n{tickers}')

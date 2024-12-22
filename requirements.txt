@@ -4,3 +4,5 @@ apimoex
 requests
 pandas
 pytelegrambotapi
+seaborn
+matplotlib
